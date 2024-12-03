@@ -4,7 +4,7 @@
 
 ## Overview
 
-This project is about designing a scalable URL shortener like bit.ly. Objectives:
+This project is about designing a scalable URL shortener like [bit.ly](https://bit.ly/). Objectives:
 
 - **CI/CD:** Use GitHub Action workflows to build container images and Helm charts, then deploy updates with ArgoCD.
 - Create short links for long URLs that redirect to the original when clicked.
@@ -17,9 +17,9 @@ This project is about designing a scalable URL shortener like bit.ly. Objectives
   OTLP-compatible services, Prometheus operator can detect via ServiceMonitors.
 - Use Zookeeper for service health checks, live configurations and shard leader elections.
 - Offer both REST and GraphQL APIs for users to pick how they want to access their data. Use data loaders in GraphQL to avoid n+1 performance hits.
-- Internal communication between services happens via gRPC (unicast) and RabbitMQ (multicast), secured with Istio's
-  mutual TLS.
+- Internal communication between services happens via gRPC (unicast) and RabbitMQ (multicast).
 - Use DNS client-side load balancing for gRPC.
+- Service mesh is secured with Istio's mutual TLS.
 - Terminate frontend TLS with Istio Ingress Gateway.
 - Handle ACME-issued and self-signed certificates with cert-manager and trust-manager.
 
@@ -53,7 +53,7 @@ This project is about designing a scalable URL shortener like bit.ly. Objectives
 - Admins can blacklist domains (applies to all shards).
 - They can gather system-wide metrics using RabbitMQ as the message broker.
 
-- ![Admin](docs/admin.png)
+![Admin](docs/admin.png)
 
 ## Shortening Algorithm
 
@@ -79,7 +79,7 @@ Examples:
 
 ### Prerequisites
 
-- cert-manager is required to handle self-signed certs.
+cert-manager is required to handle self-signed certs.
 
 ```bash
 helm install cert-manager bitnami/cert-manager --version 1.3.22 \
@@ -105,7 +105,7 @@ helm install shortener-shared manifests/shortener-shared -n $NAMESPACE --render-
 
 ### Deploy admin service
 
-- The admin and backend services are deployed as headless so the gRPC clients can use client-side DNS load balancing.
+The admin and backend services are deployed as headless so the gRPC clients can use client-side DNS load balancing.
 
 ```bash
 NAMESPACE=default
@@ -158,7 +158,7 @@ helm install shortener-frontend manifests/shortener-frontend -n $NAMESPACE
 
 ### Debug build
 
-- No HA, just deploy the bare minimum for debugging.
+No HA, just deploy the bare minimum for debugging.
 
 ```bash
 helm install shortener-shared manifests/shortener-shared -f manifests/shortener-shared/debug-values.yaml
@@ -180,7 +180,7 @@ kubectl port-forward svc/shortener-frontend-graphql 10008:5000
 kubectl port-forward svc/shortener-frontend-redirect 10009:5000
 ```
 
-- Uninstall
+Uninstall
 
 ```bash
 helm uninstall shortener-frontend
