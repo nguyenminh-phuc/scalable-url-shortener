@@ -1,5 +1,7 @@
 # Scalable URL Shortener Service
 
+![Overview](docs/overview.png)
+
 ## Overview
 
 This project is about designing a scalable URL shortener like bit.ly. Objectives:
@@ -9,11 +11,12 @@ This project is about designing a scalable URL shortener like bit.ly. Objectives
 - Links don't expire unless users delete them.
 - Block URLs on a blacklist from being shortened.
 - Track visits: daily/weekly/monthly/all-time stats, origin countries, user agents, browsers, OS, referrers, etc.
+- Use cursor-based pagination for querying stats (better for performance than offset-based).
 - Rate limit requests to prevent abuse.
 - Use OpenTelemetry for distributed tracing so developers can debug with tools like Jaeger. Export metrics to
   OTLP-compatible services, Prometheus operator can detect via ServiceMonitors.
 - Use Zookeeper for service health checks, live configurations and shard leader elections.
-- Offer both REST and GraphQL APIs for users to pick how they want to access their data.
+- Offer both REST and GraphQL APIs for users to pick how they want to access their data. Use data loaders in GraphQL to avoid n+1 performance hits.
 - Internal communication between services happens via gRPC (unicast) and RabbitMQ (multicast), secured with Istio's
   mutual TLS.
 - Use DNS client-side load balancing for gRPC.

@@ -26,7 +26,7 @@ spec:
             app:
               trust:
                 namespace: shortener
-    - repoURL: https://github.com/nguyenminh-phuc/scalable-url-shorterner/
+    - repoURL: https://github.com/nguyenminh-phuc/scalable-url-shortener/
       targetRevision: main
       ref: values
   project: default
