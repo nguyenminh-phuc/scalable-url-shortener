@@ -1,0 +1,52 @@
+﻿frontend:
+  rest:
+    image:
+      tag: latest
+    replicaCount: 1
+    gateway:
+      enabled: false
+      host: api.shortener.localcert.net
+      className: ""
+  graphql:
+    image:
+      tag: latest
+    replicaCount: 1
+    gateway:
+      enabled: false
+      host: graphql.shortener.localcert.net
+      className: ""
+  redirect:
+    image:
+      tag: latest
+    replicaCount: 1
+    gateway:
+      enabled: false
+      host: shortener.localcert.net
+      className: ""
+  serviceMonitor:
+    enabled: false
+    namespace: monitoring
+    labels: { }
+  otlpExporter:
+    enabled: false
+    endpoint: ""
+  rateLimiter:
+    enabled: false
+  web:
+    aspEnvironment: Development
+  acme:
+    enabled: false
+    email: minhphuc@protonmail.com
+    dnsSolver: https://api.getlocalcert.net/api/v1/acme-dns-compat
+    dnsNames:
+      - shortener.localcert.net
+      - "*.shortener.localcert.net"
+  jobs:
+    useIstio: false
+
+backend:
+  totalShards: 1
+
+redis:
+  statefulSetName: shortener-shared-redis-master
+  serviceName: shortener-shared-redis-master

@@ -1,0 +1,176 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shortener-backend.fullname" . }}
+  labels:
+    {{- include "shortener-backend.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "shortener-backend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "shortener-backend.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "shortener-backend.serviceAccountName" . }}
+      {{- if .Values.backend.image.pullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.backend.image.pullSecret }}
+      {{- end }}
+      initContainers:
+        {{- include "shortener-backend.waitForDependencies" . | nindent 8 }}
+      containers:
+        - name: backend
+          image: {{ .Values.backend.image.name }}:{{ .Values.backend.image.tag }}
+          ports:
+            - name: web
+              containerPort: {{ .Values.backend.web.containerPort }}
+          livenessProbe:
+            httpGet:
+              path: /healthz/live
+              port: web
+              scheme: HTTPS
+            initialDelaySeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz/ready
+              port: web
+              scheme: HTTPS
+            initialDelaySeconds: 15
+          env:
+            - name: CONTAINER_MODE
+              value: "true"
+            - name: SERVICE_VERSION
+              value: {{ .Values.backend.image.tag | quote }}
+            - name: ASPNETCORE_ENVIRONMENT
+              value: {{ .Values.backend.web.aspEnvironment | quote }}
+            - name: ASPNETCORE_URLS
+              value: "https://*:{{ .Values.backend.web.containerPort }}/"
+            {{- if .Values.backend.certificate.enabled }}
+            - name: CERTIFICATE_ENABLED
+              value: "true"
+            - name: CERTIFICATE_CERT_PATH
+              value: "/etc/backend-tls/tls.crt"
+            - name: CERTIFICATE_KEY_PATH
+              value: "/etc/backend-tls/tls.key"
+            {{- end }}
+            {{- if .Values.backend.otlpExporter.endpoint }}
+            - name: OTLP_ENABLED
+              value: "true"
+            - name: OTLP_ENDPOINT
+              value: {{ .Values.backend.otlpExporter.endpoint | quote }}
+            {{- end }}
+            - name: SHARD_ID
+              value: {{ .Values.backend.shardId | quote }}
+            - name: ADMIN_SCHEME
+              value: {{ .Values.admin.grpcScheme | quote }}
+            - name: ADMIN_SERVER
+              value: {{ .Values.admin.serviceName | quote }}
+            - name: ADMIN_PORT
+              value: {{ .Values.admin.port | quote }}
+            - name: JWT_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backend.jwt.secret }}
+                  key: issuer
+            - name: JWT_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backend.jwt.secret }}
+                  key: audience
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backend.jwt.secret }}
+                  key: key
+            - name: JWT_EXPIRATION_MINUTES
+              value: {{ .Values.backend.jwt.expirationMinutes | quote }}
+            - name: ZOOKEEPER_SERVER
+              value: {{ .Values.zookeeper.serviceName | quote }}
+            - name: ZOOKEEPER_PORT
+              value: {{ .Values.zookeeper.port | quote }}
+            - name: RABBITMQ_SERVER
+              value: {{ .Values.rabbitmq.serviceName | quote }}
+            - name: RABBITMQ_PORT
+              value: {{ .Values.rabbitmq.port | quote }}
+            - name: RABBITMQ_VIRTUAL_HOST
+              value: {{ .Values.rabbitmq.virtualHost | quote }}
+            - name: RABBITMQ_USER
+              value: {{ .Values.rabbitmq.username | quote }}
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.rabbitmq.secret }}
+                  key: rabbitmq-password
+            - name: REDIS_SERVER
+              value: {{ .Values.redis.serviceName | quote }}
+            - name: REDIS_PORT
+              value: {{ .Values.redis.port | quote }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.redis.secret | quote }}
+                  key: redis-password
+            {{- if (include "shortener-backend.isRelease" .) }}
+            {{- $postgresql_ha := index .Values "postgresql-ha" }}
+            - name: POSTGRESQL_SERVER
+              value: {{ printf "%s-postgresql-ha-pgpool" (include "shortener-backend.fullname" .) | quote }}
+            - name: POSTGRESQL_PORT
+              value: {{ $postgresql_ha.service.ports.postgresql | quote }}
+            - name: POSTGRESQL_USER
+              value: {{ $postgresql_ha.postgresql.username | quote }}
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $postgresql_ha.postgresql.existingSecret }}
+                  key: password
+            {{- else }}
+            - name: POSTGRESQL_SERVER
+              value: {{ printf "%s-postgresql" (include "shortener-backend.fullname" .) | quote }}
+            - name: POSTGRESQL_PORT
+              value: {{ .Values.postgresql.primary.service.ports.postgresql | quote }}
+            - name: POSTGRESQL_USER
+              value: "postgres"
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.auth.existingSecret }}
+                  key: postgres-password
+            {{- end }}
+          volumeMounts:
+            {{- if .Values.admin.tls.enabled }}
+            - name: ca-pem
+              mountPath: /etc/ssl/certs/ca.pem
+              subPath: ca.pem
+              readOnly: false
+            {{- end }}
+            {{- if .Values.backend.certificate.enabled  }}
+            - name: backend-tls
+              mountPath: /etc/backend-tls
+              readOnly: true
+            {{- end }}
+      volumes:
+        {{- if .Values.admin.tls.enabled }}
+        - name: ca-pem
+          configMap:
+            name: {{ .Values.admin.tls.caCM }}
+        {{- end }}
+        {{- if .Values.backend.certificate.enabled }}
+        - name: backend-tls
+          secret:
+            secretName: {{ printf "%s-tls" (include "shortener-backend.fullname" .) }}
+        {{- end }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - {{ include "shortener-backend.name" . }}
+                topologyKey: kubernetes.io/hostname

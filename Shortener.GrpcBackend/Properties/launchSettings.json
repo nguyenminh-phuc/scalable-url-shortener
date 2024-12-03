@@ -1,0 +1,37 @@
+﻿{
+    "$schema": "http://json.schemastore.org/launchsettings.json",
+    "profiles": {
+        "https": {
+            "commandName": "Project",
+            "dotnetRunMessages": true,
+            "launchBrowser": false,
+            "applicationUrl": "https://localhost:5003",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ZOOKEEPER_SERVER": "127.0.0.1",
+                "ZOOKEEPER_PORT": "10000",
+                "ZOOKEEPER_SHARD_PATH": "/dev-shards",
+                "ZOOKEEPER_ELECTION_PATH": "/dev-election",
+                "RABBITMQ_SERVER": "127.0.0.1",
+                "RABBITMQ_PORT": "10001",
+                "RABBITMQ_PASSWORD": "password01234567",
+                "REDIS_SERVER": "127.0.0.1",
+                "REDIS_PORT": "10002",
+                "REDIS_PASSWORD": "password",
+                "POSTGRESQL_SERVER": "127.0.0.1",
+                "POSTGRESQL_PORT": "10005",
+                "POSTGRESQL_PASSWORD": "password",
+                "ADMIN_SCHEME": "https",
+                "ADMIN_SERVER": "127.0.0.1",
+                "ADMIN_PORT": "5002",
+                "ADMIN_ACCEPT_ANY_CERTIFICATE": "true",
+                "JWT_ISSUER": "shortener.localcert.net",
+                "JWT_AUDIENCE": "shortener.localcert.net",
+                "JWT_SECRET_KEY": "password0123456789abcdefghijklmn",
+                "SHARD_ID": "0",
+                "OTLP_ENABLED": "false",
+                "OTLP_ENDPOINT": "http://127.0.0.1:4317"
+            }
+        }
+    }
+}

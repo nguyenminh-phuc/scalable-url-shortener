@@ -1,0 +1,26 @@
+﻿{{- if .Values.backend.serviceMonitor.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "shortener-backend.fullname" . }}
+  {{- if .Values.backend.serviceMonitor.namespace }}
+  namespace: {{ .Values.backend.serviceMonitor.namespace }}
+  {{- end }}
+  labels:
+    {{- include "shortener-backend.labels" . | nindent 4 }}
+    {{- if .Values.backend.serviceMonitor.labels }}
+    {{- toYaml .Values.backend.serviceMonitor.labels | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "shortener-backend.selectorMetricLabels" . | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: web
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+{{- end -}}

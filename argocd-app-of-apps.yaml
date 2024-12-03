@@ -1,0 +1,22 @@
+﻿apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: shortener-app-of-apps
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    namespace: shortener
+    server: https://kubernetes.default.svc
+  source:
+    repoURL: https://github.com/nguyenminh-phuc/scalable-url-shorterner/
+    targetRevision: main
+    path: manifests/argocd-examples
+  project: default
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true

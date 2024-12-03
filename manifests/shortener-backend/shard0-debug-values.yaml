@@ -1,0 +1,32 @@
+﻿debug: true
+release: false
+
+backend:
+  image:
+    tag: latest
+  shardId: 0
+  replicaCount: 1
+  service:
+    headless: false
+  serviceMonitor:
+    enabled: false
+    namespace: monitoring
+    labels: { }
+  otlpExporter:
+    enabled: false
+    endpoint: ""
+  web:
+    aspEnvironment: Development
+  jobs:
+    useIstio: false
+
+redis:
+  statefulSetName: shortener-shared-redis-master
+  serviceName: shortener-shared-redis-master
+
+postgresql:
+  auth:
+    existingSecret: shortener-backend0-postgresql
+  primary:
+    initdb:
+      scriptsConfigMap: shortener-backend0-initdb

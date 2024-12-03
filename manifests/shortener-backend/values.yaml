@@ -1,0 +1,89 @@
+release: true
+debug: false
+
+backend:
+  image:
+    name: phucapps/shortener-backend
+    tag: v1.0.0
+    pullSecret: ""
+  replicaCount: 3
+  shardId: 0
+  jwt:
+    expirationMinutes: 1440
+    secret: shortener-backend-jwt
+  service:
+    type: ClusterIP
+    port: 5001
+    headless: true
+  serviceMonitor:
+    enabled: false
+    namespace: ""
+    labels: { }
+  otlpExporter:
+    enabled: false
+    endpoint: ""
+  certificate:
+    enabled: true
+    name: shortener-backend-ca
+    issuer: shortener-shared-ca-issuer
+  web:
+    aspEnvironment: Production
+    containerPort: 5001
+  jobs:
+    kubectl: quay.io/appuio/oc:v4.16
+    useIstio: false
+
+admin:
+  deploymentName: shortener-admin
+  serviceName: shortener-admin
+  grpcScheme: dns
+  port: 5001
+  tls:
+    enabled: true
+    caCM: shortener-admin-ca
+
+trust-manager:
+  deploymentName: trust-manager
+
+zookeeper:
+  statefulSetName: shortener-shared-zookeeper
+  serviceName: shortener-shared-zookeeper
+  port: 2181
+
+rabbitmq:
+  statefulSetName: shortener-shared-rabbitmq
+  serviceName: shortener-shared-rabbitmq
+  port: 5672
+  virtualHost: /
+  username: user
+  secret: shortener-rabbitmq
+
+redis:
+  statefulSetName: shortener-shared-redis-cluster
+  serviceName: shortener-shared-redis-cluster
+  port: 6379
+  secret: shortener-redis
+
+postgresql-ha:
+  postgresql:
+    existingSecret: shortener-backend0-postgresql
+    initdbScriptsCM: shortener-backend0-initdb
+    resourcesPreset: none
+  pgpool:
+    existingSecret: shortener-backend0-postgresql
+    resourcesPreset: none
+  persistentVolumeClaimRetentionPolicy:
+    enabled: true
+    whenDeleted: Delete
+
+postgresql:
+  architecture: standalone
+  auth:
+    existingSecret: shortener-backend0-postgresql
+  primary:
+    initdb:
+      scriptsConfigMap: shortener-backend0-initdb
+    resourcesPreset: none
+    persistentVolumeClaimRetentionPolicy:
+      enabled: true
+      whenDeleted: Delete

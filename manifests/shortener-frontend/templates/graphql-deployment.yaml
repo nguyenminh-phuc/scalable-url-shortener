@@ -1,0 +1,127 @@
+{{- if .Values.frontend.graphql.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ printf "%s-graphql" (include "shortener-frontend.fullname" .) }}
+  labels:
+    {{- include "shortener-frontend.graphqlLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.frontend.graphql.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "shortener-frontend.selectorGraphqlLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "shortener-frontend.graphqlLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "shortener-frontend.serviceAccountName" . }}
+      {{- if .Values.frontend.graphql.image.pullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.frontend.graphql.image.pullSecret }}
+      {{- end }}
+      initContainers:
+        {{- include "shortener-frontend.waitForDependencies" . | nindent 8 }}
+      containers:
+        - name: graphql
+          image: {{ .Values.frontend.graphql.image.name }}:{{ .Values.frontend.graphql.image.tag }}
+          ports:
+            - name: web
+              containerPort: {{ .Values.frontend.web.containerPort }}
+          livenessProbe:
+            httpGet:
+              path: /healthz/live
+              port: web
+            initialDelaySeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz/ready
+              port: web
+            initialDelaySeconds: 15
+          env:
+            - name: CONTAINER_MODE
+              value: "true"
+            - name: SERVICE_VERSION
+              value: {{ .Values.frontend.graphql.image.tag | quote }}
+            - name: ASPNETCORE_ENVIRONMENT
+              value: {{ .Values.frontend.web.aspEnvironment | quote }}
+            - name: ASPNETCORE_URLS
+              value: "http://*:{{ .Values.frontend.web.containerPort }}/"
+            {{- if .Values.frontend.otlpExporter.endpoint }}
+            - name: OTLP_ENABLED
+              value: "true"
+            - name: OTLP_ENDPOINT
+              value: {{ .Values.frontend.otlpExporter.endpoint | quote }}
+            {{- end }}
+            - name: ZOOKEEPER_SERVER
+              value: {{ .Values.zookeeper.serviceName | quote }}
+            - name: ZOOKEEPER_PORT
+              value: {{ .Values.zookeeper.port | quote }}
+            - name: REDIS_SERVER
+              value: {{ .Values.redis.serviceName | quote }}
+            - name: REDIS_PORT
+              value: {{ .Values.redis.port | quote }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.redis.secret | quote }}
+                  key: redis-password
+            - name: TOTAL_SHARDS
+              value: {{ .Values.backend.totalShards | quote }}
+            - name: BACKEND_SCHEME
+              value: {{ .Values.backend.grpcScheme | quote }}
+            - name: BACKEND_SERVER_FORMAT
+              value: {{ .Values.backend.serviceNameFormat | quote }}
+            - name: BACKEND_PORT
+              value: {{ .Values.backend.port | quote }}
+            - name: JWT_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.frontend.web.jwtSecret }}
+                  key: issuer
+            - name: JWT_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.frontend.web.jwtSecret }}
+                  key: audience
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.frontend.web.jwtSecret }}
+                  key: key
+            - name: REDIRECT_SCHEME
+              {{- if .Values.frontend.redirect.gateway.enabled }}
+              value: "https"
+              {{- else }}
+              value: "http"
+              {{- end }}
+            - name: REDIRECT_HOST
+              value: {{ .Values.frontend.redirect.gateway.host | quote }}
+            - name: RATE_LIMITER_ENABLED
+              value: {{ .Values.frontend.rateLimiter.enabled | quote }}
+          volumeMounts:
+            {{- if .Values.backend.tls.enabled }}
+            - name: ca-pem
+              mountPath: /etc/ssl/certs/ca.pem
+              subPath: ca.pem
+              readOnly: false
+            {{- end }}
+      volumes:
+        {{- if .Values.backend.tls.enabled }}
+        - name: ca-pem
+          configMap:
+            name: {{ .Values.backend.tls.caCM }}
+        {{- end }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - {{ include "shortener-frontend.name" . }}
+                topologyKey: kubernetes.io/hostname
+{{- end -}}

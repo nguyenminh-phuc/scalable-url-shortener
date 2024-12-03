@@ -1,0 +1,88 @@
+frontend:
+  rest:
+    enabled: true
+    image:
+      name: phucapps/shortener-rest
+      tag: v1.0.0
+      pullSecret: ""
+    replicaCount: 3
+    gateway:
+      enabled: false
+      host: api.shortener.localhost
+      port: 443
+      className: ""
+      certificateSecret: shortener-frontend-tls
+  graphql:
+    enabled: true
+    image:
+      name: phucapps/shortener-graphql
+      tag: v1.0.0
+      pullSecret: ""
+    replicaCount: 3
+    gateway:
+      enabled: false
+      host: graphql.shortener.localhost
+      port: 443
+      className: ""
+      certificateSecret: shortener-frontend-tls
+  redirect:
+    enabled: true
+    image:
+      name: phucapps/shortener-redirect
+      tag: v1.0.0
+      pullSecret: ""
+    replicaCount: 3
+    gateway:
+      enabled: false
+      host: shortener.localhost
+      port: 443
+      className: ""
+      certificateSecret: shortener-frontend-tls
+  service:
+    type: ClusterIP
+    port: 5000
+  serviceMonitor:
+    enabled: false
+    namespace: ""
+    labels: { }
+  otlpExporter:
+    enabled: false
+    endpoint: ""
+  rateLimiter:
+    enabled: true
+  web:
+    aspEnvironment: Production
+    containerPort: 5000
+    jwtSecret: shortener-backend-jwt
+  acme:
+    enabled: false
+    email: ""
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    dnsSolver: ""
+    dnsNames: [ ]
+    secret:
+      name: shortener-frontend-acme
+      key: acmedns.json
+  jobs:
+    kubectl: quay.io/appuio/oc:v4.16
+    useIstio: false
+
+backend:
+  totalShards: 1
+  serviceNameFormat: shortener-backend{0}
+  grpcScheme: dns
+  port: 5001
+  tls:
+    enabled: true
+    caCM: shortener-backend-ca
+
+zookeeper:
+  statefulSetName: shortener-shared-zookeeper
+  serviceName: shortener-shared-zookeeper
+  port: 2181
+
+redis:
+  statefulSetName: shortener-shared-redis-cluster
+  serviceName: shortener-shared-redis-cluster
+  port: 6379
+  secret: shortener-redis

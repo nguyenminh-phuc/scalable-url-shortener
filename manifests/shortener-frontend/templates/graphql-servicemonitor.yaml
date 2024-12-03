@@ -1,0 +1,23 @@
+﻿{{- if and .Values.frontend.serviceMonitor.enabled .Values.frontend.graphql.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ printf "%s-graphql" (include "shortener-frontend.fullname" .) }}
+  {{- if .Values.frontend.serviceMonitor.namespace }}
+  namespace: {{ .Values.frontend.serviceMonitor.namespace }}
+  {{- end }}
+  labels:
+    {{- include "shortener-frontend.graphqlLabels" . | nindent 4 }}
+    {{- if .Values.frontend.serviceMonitor.labels }}
+    {{- toYaml .Values.frontend.serviceMonitor.labels | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "shortener-frontend.selectorGraphqlLabels" . | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: web
+{{- end -}}

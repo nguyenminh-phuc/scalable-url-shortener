@@ -1,0 +1,39 @@
+﻿{{- if .Values.backend.certificate.enabled -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "shortener-backend.fullname" . }}
+  labels:
+    {{- include "shortener-backend.labels" . | nindent 4 }}
+spec:
+  secretName: {{ printf "%s-tls" (include "shortener-backend.fullname" .) }}
+  dnsNames:
+    - {{ include "shortener-backend.fullname" . }}
+  issuerRef:
+    name: {{ .Values.backend.certificate.issuer }}
+    kind: Issuer
+    group: cert-manager.io
+---
+{{- if eq (int .Values.backend.shardId) 0 }}
+apiVersion: trust.cert-manager.io/v1alpha1
+kind: Bundle
+metadata:
+  name: {{ .Values.backend.certificate.name }}
+  labels:
+    {{- include "shortener-backend.labels" . | nindent 4 }}
+spec:
+  sources:
+    - secret:
+        name: {{ printf "%s-tls" (include "shortener-backend.fullname" .) }}
+        key: ca.crt
+    - secret:
+        name: {{ printf "%s-tls" (include "shortener-backend.fullname" .) }}
+        key: tls.crt
+  target:
+    configMap:
+      key: ca.pem
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: {{ .Release.Namespace }}
+{{- end }}
+{{- end -}}

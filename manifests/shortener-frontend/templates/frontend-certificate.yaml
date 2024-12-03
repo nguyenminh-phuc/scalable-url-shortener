@@ -1,0 +1,36 @@
+{{- if .Values.frontend.acme.enabled -}}
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "shortener-frontend.fullname" . }}
+  labels:
+    {{- include "shortener-frontend.labels" . | nindent 4 }}
+spec:
+  acme:
+    email: {{ .Values.frontend.acme.email }}
+    privateKeySecretRef:
+      name: {{ printf "%s-acme-private" (include "shortener-frontend.fullname" .) }}
+    server: {{ .Values.frontend.acme.server }}
+    solvers:
+      - dns01:
+          acmeDNS:
+            host: {{ .Values.frontend.acme.dnsSolver }}
+            accountSecretRef:
+              name: {{ .Values.frontend.acme.secret.name }}
+              key: {{ .Values.frontend.acme.secret.key }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "shortener-frontend.fullname" . }}
+  labels:
+    {{- include "shortener-frontend.labels" . | nindent 4 }}
+spec:
+  dnsNames:
+    {{- range .Values.frontend.acme.dnsNames }}
+    - {{ . | quote }}
+    {{- end }}
+  secretName: {{ printf "%s-tls" (include "shortener-frontend.fullname" .) }}
+  issuerRef:
+    name: {{ include "shortener-frontend.fullname" . }}
+{{- end -}}

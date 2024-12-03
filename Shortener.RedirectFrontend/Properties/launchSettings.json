@@ -1,0 +1,29 @@
+﻿{
+    "$schema": "http://json.schemastore.org/launchsettings.json",
+    "profiles": {
+        "http": {
+            "commandName": "Project",
+            "dotnetRunMessages": true,
+            "launchBrowser": false,
+            "applicationUrl": "http://localhost:5006",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "TOTAL_SHARDS": "1",
+                "ZOOKEEPER_SERVER": "127.0.0.1",
+                "ZOOKEEPER_PORT": "10000",
+                "ZOOKEEPER_SHARD_PATH": "/dev-shards",
+                "REDIS_SERVER": "127.0.0.1",
+                "REDIS_PORT": "10002",
+                "REDIS_PASSWORD": "password",
+                "BACKEND_SCHEME": "https",
+                "BACKEND_SERVER_FORMAT": "127.0.0.1",
+                "BACKEND_PORT": "5003",
+                "BACKEND_ACCEPT_ANY_CERTIFICATE": "true",
+                "OTLP_ENABLED": "false",
+                "OTLP_ENDPOINT": "http://127.0.0.1:4317",
+                "REST_URL": "https://api.shortener.localcert.net/swagger/index.html",
+                "GRAPHQL_URL": "https://graphql.shortener.localcert.net/graphql/"
+            }
+        }
+    }
+}

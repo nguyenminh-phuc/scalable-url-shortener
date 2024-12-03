@@ -1,0 +1,82 @@
+﻿apiVersion: v1
+kind: ConfigMap
+metadata:
+  {{- if (include "shortener-backend.isRelease" .) }}
+  {{- $postgresql_ha := index .Values "postgresql-ha" }}
+  name: {{ $postgresql_ha.postgresql.initdbScriptsCM }}
+  {{- else }}
+  name: {{ .Values.postgresql.primary.initdb.scriptsConfigMap }}
+  {{- end }}
+  labels:
+    {{- include "shortener-backend.labels" . | nindent 4 }}
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS "Range"
+    (
+      "Id"      INT PRIMARY KEY,
+      "RangeId" INT NOT NULL UNIQUE
+    );
+
+    CREATE TABLE IF NOT EXISTS "Domain"
+    (
+      "Id"        SERIAL PRIMARY KEY,
+      "Name"      VARCHAR                  NOT NULL UNIQUE,
+      "CreatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS "User"
+    (
+      "Id"             SERIAL PRIMARY KEY,
+      "Username"       VARCHAR                  NOT NULL UNIQUE,
+      "HashedPassword" VARCHAR                  NOT NULL,
+      "CreatedAt"      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+      "UpdatedAt"      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS "Url"
+    (
+      "Id"             SERIAL PRIMARY KEY,
+      "DestinationUrl" TEXT                     NOT NULL,
+      "UserId"         INT                      NOT NULL,
+      "DomainId"       INT                      NOT NULL,
+      "TotalViews"     INT                      NOT NULL DEFAULT 0,
+      "CreatedAt"      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+      "UpdatedAt"      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+      CONSTRAINT "FK_Url_User_UserId" FOREIGN KEY ("UserId") REFERENCES "User" ("Id") ON DELETE CASCADE,
+      CONSTRAINT "FK_Url_Domain_DomainId" FOREIGN KEY ("DomainId") REFERENCES "Domain" ("Id") ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS "Visit"
+    (
+      "Id"                SERIAL PRIMARY KEY,
+      "Total"             INT                      NOT NULL,
+      "BrowserType"       INT                      NOT NULL,
+      "RobotType"         INT                      NOT NULL,
+      "UnknownType"       INT                      NOT NULL,
+      "Platforms"         JSONB                    NOT NULL,
+      "Windows"           INT                      NOT NULL,
+      "Linux"             INT                      NOT NULL,
+      "Ios"               INT                      NOT NULL,
+      "MacOs"             INT                      NOT NULL,
+      "Android"           INT                      NOT NULL,
+      "OtherPlatform"     INT                      NOT NULL,
+      "Browsers"          JSONB                    NOT NULL,
+      "Chrome"            INT                      NOT NULL,
+      "Edge"              INT                      NOT NULL,
+      "Firefox"           INT                      NOT NULL,
+      "InternetExplorer"  INT                      NOT NULL,
+      "Opera"             INT                      NOT NULL,
+      "Safari"            INT                      NOT NULL,
+      "OtherBrowser"      INT                      NOT NULL,
+      "MobileDeviceTypes" JSONB                    NOT NULL,
+      "Countries"         JSONB                    NOT NULL,
+      "Referrers"         JSONB                    NOT NULL,
+      "UrlId"             INT                      NOT NULL,
+      "CreatedAt"         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+      "UpdatedAt"         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+      CONSTRAINT "FK_Visit_Url_UrlId" FOREIGN KEY ("UrlId") REFERENCES "Url" ("Id") ON DELETE CASCADE
+    );
+
+    INSERT INTO "Range" ("Id", "RangeId")
+    VALUES (1, {{ .Values.backend.shardId }})
+    ON CONFLICT DO NOTHING;

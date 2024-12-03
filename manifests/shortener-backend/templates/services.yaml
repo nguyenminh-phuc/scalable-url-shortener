@@ -1,0 +1,36 @@
+﻿apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shortener-backend.fullname" . }}
+  labels:
+    {{- include "shortener-backend.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "shortener-backend.selectorLabels" . | nindent 4 }}
+  type: {{ .Values.backend.service.type }}
+  {{- if .Values.backend.service.headless }}
+  clusterIP: None
+  {{- end }}
+  ports:
+    - name: web
+      protocol: TCP
+      port: {{ .Values.backend.service.port }}
+      targetPort: web
+---
+{{- if .Values.backend.serviceMonitor.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ printf "%s-metrics" (include "shortener-backend.fullname" .) }}
+  labels:
+    {{- include "shortener-backend.metricLabels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "shortener-backend.selectorLabels" . | nindent 4 }}
+  type: {{ .Values.backend.service.type }}
+  ports:
+    - name: web
+      protocol: TCP
+      port: {{ .Values.backend.service.port }}
+      targetPort: web
+{{- end }}

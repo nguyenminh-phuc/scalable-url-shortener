@@ -1,0 +1,25 @@
+﻿apiVersion: v1
+kind: ConfigMap
+metadata:
+  {{- if (include "shortener-admin.isRelease" .) }}
+  {{- $postgresql_ha := index .Values "postgresql-ha" }}
+  name: {{ $postgresql_ha.postgresql.initdbScriptsCM }}
+  {{- else }}
+  name: {{ .Values.postgresql.primary.initdb.scriptsConfigMap }}
+  {{- end }}
+  labels:
+    {{- include "shortener-admin.labels" . | nindent 4 }}
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS "BannedDomain"
+    (
+      "Id"        SERIAL PRIMARY KEY,
+      "Name"      VARCHAR                  NOT NULL UNIQUE,
+      "CreatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    );
+
+    {{- range .Values.admin.bannedDomains }}
+    INSERT INTO "BannedDomain" ("Name", "CreatedAt")
+    VALUES ({{ . | squote }}, NOW())
+    ON CONFLICT("Name") DO NOTHING;
+    {{- end }}

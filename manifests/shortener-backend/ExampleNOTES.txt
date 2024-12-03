@@ -1,0 +1,48 @@
+﻿$ SHARD_ID=0
+$ helm install shortener-backend${SHARD_ID} manifests/shortener-backend/ --render-subchart-notes
+NAME: shortener-backend0
+LAST DEPLOYED: ...
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+CHART NAME: postgresql-ha
+CHART VERSION: 14.3.5
+APP VERSION: 16.4.0
+** Please be patient while the chart is being deployed **
+PostgreSQL can be accessed through Pgpool via port 5432 on the following DNS name from within your cluster:
+
+    shortener-backend0-postgresql-ha-pgpool.default.svc.cluster.local
+
+Pgpool acts as a load balancer for PostgreSQL and forward read/write connections to the primary node while read-only connections are forwarded to standby nodes.
+
+To get the password for "postgres" run:
+
+    export POSTGRES_PASSWORD=$(kubectl get secret --namespace default shortener-backend0-postgresql -o jsonpath="{.data.password}" | base64 -d)
+
+To get the password for "repmgr" run:
+
+    export REPMGR_PASSWORD=$(kubectl get secret --namespace default shortener-backend0-postgresql -o jsonpath="{.data.repmgr-password}" | base64 -d)
+
+To connect to your database run the following command:
+
+    kubectl run shortener-backend0-postgresql-ha-client --rm --tty -i --restart='Never' --namespace default --image docker.io/bitnami/postgresql-repmgr:16.4.0-debian-12-r27 --env="PGPASSWORD=$POSTGRES_PASSWORD"  \
+        --command -- psql -h shortener-backend0-postgresql-ha-pgpool -p 5432 -U postgres -d postgres
+
+To connect to your database from outside the cluster execute the following commands:
+
+    kubectl port-forward --namespace default svc/shortener-backend0-postgresql-ha-pgpool 5432:5432 &
+    psql -h 127.0.0.1 -p 5432 -U postgres -d postgres
+
+WARNING: There are "resources" sections in the chart not set. Using "resourcesPreset" is not recommended for production. For production installations, please set the following values according to your workload needs:
+  - pgpool.resources
+  - postgresql.resources
+  - witness.resources
++info https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+CHART NAME: shortener-backend
+CHART VERSION: 1.0.0
+APP VERSION: 1.0.0
+
+
+Type: Release

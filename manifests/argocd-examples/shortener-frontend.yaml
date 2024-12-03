@@ -1,0 +1,48 @@
+﻿apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: shortener-frontend
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    namespace: shortener
+    server: https://kubernetes.default.svc
+  sources:
+    - repoURL: registry-1.docker.io/phucapps
+      chart: shortener-frontend
+      targetRevision: 1.0.0
+      helm:
+        valueFiles:
+          - $values/manifests/shortener-frontend/debug-values.yaml
+        valuesObject:
+          frontend:
+            rest:
+              gateway:
+                enabled: true
+                className: istio
+            graphql:
+              gateway:
+                enabled: true
+                className: istio
+            redirect:
+              gateway:
+                enabled: true
+                className: istio
+            acme:
+              enabled: true
+            jobs:
+              useIstio: true
+          backend:
+            totalShards: 2
+    - repoURL: https://github.com/nguyenminh-phuc/scalable-url-shorterner/
+      targetRevision: main
+      ref: values
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

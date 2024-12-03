@@ -1,0 +1,38 @@
+﻿apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: shortener-shared
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    namespace: shortener
+    server: https://kubernetes.default.svc
+  sources:
+    - repoURL: registry-1.docker.io/phucapps
+      chart: shortener-shared
+      targetRevision: 1.0.0
+      helm:
+        valueFiles:
+          - $values/manifests/shortener-shared/debug-values.yaml
+        valuesObject:
+          shared:
+            jobs:
+              useIstio: true
+          trust-manager:
+            app:
+              trust:
+                namespace: shortener
+    - repoURL: https://github.com/nguyenminh-phuc/scalable-url-shorterner/
+      targetRevision: main
+      ref: values
+  project: default
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,35 @@
+﻿apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ printf "%s-wait-for-trust-manager" (include "shortener-admin.fullname" .) }}
+  labels:
+    {{- include "shortener-admin.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-1"
+spec:
+  ttlSecondsAfterFinished: 120
+  backoffLimit: 3
+  template:
+    metadata:
+      name: {{ printf "%s-wait-for-trust-manager" (include "shortener-admin.fullname" .) }}
+    spec:
+      serviceAccountName: {{ printf "%s-pre-install" (include "shortener-admin.fullname" .) }}
+      containers:
+        - name: wait-for-trust-manager
+          image: {{ .Values.admin.jobs.kubectl }}
+          {{- if .Values.admin.jobs.useIstio }}
+          securityContext:
+            runAsUser: 1337
+          {{- end }}
+          command: [ "/bin/sh", "-c" ]
+          args:
+            - |
+{{ include "shortener-admin.useIstio" . | indent 14 }}
+{{ $trustManager := index .Values "trust-manager" }}
+{{ include "shortener-admin.getReplicasAndCheckReady" (dict
+  "name" $trustManager.deploymentName
+  "type" "deployment"
+  "namespace" .Release.Namespace) | indent 14 }}
+              echo "Done."
+      restartPolicy: Never

@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
+    <ContainerRepository>shortener-backend</ContainerRepository>
+    <ContainerImageTags>v1.0.0;latest</ContainerImageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MaxMind.GeoIP2" Version="5.2.0"/>
+    <PackageReference Include="MyCSharp.HttpUserAgentParser.MemoryCache" Version="3.0.6"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shortener.BackendShared\Shortener.BackendShared.csproj"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="GeoLite2-Country.mmdb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ContainerPort Include="5001" Type="tcp"/>
+  </ItemGroup>
+
+</Project>

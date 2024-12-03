@@ -1,0 +1,17 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "Shortener.Shared.Grpc";
+
+service AdminService {
+    rpc IsBanned(IsBannedRequest) returns (IsBannedReply);
+}
+
+message IsBannedRequest
+{
+    string domain = 1;
+}
+
+message IsBannedReply
+{
+    bool banned = 1;
+}

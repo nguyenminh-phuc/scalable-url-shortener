@@ -1,0 +1,15 @@
+apiVersion: v2
+name: shortener-admin
+description: URL shortener admin services
+type: application
+version: 1.0.0
+appVersion: "v1.0.0"
+dependencies:
+  - name: postgresql-ha
+    version: 14.3.6
+    repository: https://charts.bitnami.com/bitnami
+    condition: release
+  - name: postgresql
+    version: 16.1.2
+    repository: https://charts.bitnami.com/bitnami
+    condition: debug

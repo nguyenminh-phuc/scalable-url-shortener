@@ -1,0 +1,49 @@
+name: Build shortener-graphql image
+
+on:
+  push:
+    paths:
+      - Shortener.Shared/**
+      - Shortener.FrontendShared/**
+      - Shortener.GraphQLFrontend/**
+  workflow_dispatch:
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
+          cache: true
+          cache-dependency-path: "Shortener.GraphQLFrontend/packages.lock.json"
+
+      - name: Set environment variables
+        id: set-variables
+        run: |
+          echo "VERSION=$(grep -oP '<ContainerImageTags>\K[^;]+' Shortener.Admin/Shortener.Admin.csproj)" >> "$GITHUB_OUTPUT"
+
+      - name: Build GraphQLFrontend
+        run: dotnet publish Shortener.GraphQLFrontend --os linux --arch x64 -c Release /t:PublishContainer
+
+      - name: Tag image
+        run: |
+          docker tag shortener-graphql:${{ steps.set-variables.outputs.VERSION }} ${{ secrets.DOCKER_REGISTRY }}/${{ secrets.DOCKER_USERNAME }}/shortener-graphql:${{ steps.set-variables.outputs.VERSION }}
+          docker tag shortener-graphql:latest ${{ secrets.DOCKER_REGISTRY }}/${{ secrets.DOCKER_USERNAME }}/shortener-graphql:latest
+
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.DOCKER_REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker push
+        run: docker push -a ${{ secrets.DOCKER_REGISTRY }}/${{ secrets.DOCKER_USERNAME }}/shortener-graphql

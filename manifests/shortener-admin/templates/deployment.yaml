@@ -1,0 +1,162 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shortener-admin.fullname" . }}
+  labels:
+    {{- include "shortener-admin.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.admin.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "shortener-admin.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "shortener-admin.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "shortener-admin.serviceAccountName" . }}
+      {{- if .Values.admin.image.pullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.admin.image.pullSecret }}
+      {{- end }}
+      initContainers:
+        {{- include "shortener-admin.waitForDependencies" . | nindent 8 }}
+      containers:
+        - name: admin
+          image: {{ .Values.admin.image.name }}:{{ .Values.admin.image.tag }}
+          ports:
+            - name: web
+              containerPort: {{ .Values.admin.web.containerPort }}
+          livenessProbe:
+            httpGet:
+              path: /healthz/live
+              port: web
+              scheme: HTTPS
+            initialDelaySeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz/ready
+              port: web
+              scheme: HTTPS
+            initialDelaySeconds: 15
+          env:
+            - name: CONTAINER_MODE
+              value: "true"
+            - name: SERVICE_VERSION
+              value: {{ .Values.admin.image.tag | quote }}
+            - name: ASPNETCORE_ENVIRONMENT
+              value: {{ .Values.admin.web.aspEnvironment | quote }}
+            - name: ASPNETCORE_URLS
+              value: "https://*:{{ .Values.admin.web.containerPort }}/"
+            {{- if .Values.admin.certificate.enabled }}
+            - name: CERTIFICATE_ENABLED
+              value: "true"
+            - name: CERTIFICATE_CERT_PATH
+              value: "/etc/admin-tls/tls.crt"
+            - name: CERTIFICATE_KEY_PATH
+              value: "/etc/admin-tls/tls.key"
+            {{- end }}
+            {{- if .Values.admin.otlpExporter.endpoint }}
+            - name: OTLP_ENABLED
+              value: "true"
+            - name: OTLP_ENDPOINT
+              value: {{ .Values.admin.otlpExporter.endpoint | quote }}
+            {{- end }}
+            - name: ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.admin.web.basicAuthSecret }}
+                  key: username
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.admin.web.basicAuthSecret }}
+                  key: password
+            - name: ZOOKEEPER_SERVER
+              value: {{ .Values.zookeeper.serviceName | quote }}
+            - name: ZOOKEEPER_PORT
+              value: {{ .Values.zookeeper.port | quote }}
+            - name: RABBITMQ_SERVER
+              value: {{ .Values.rabbitmq.serviceName | quote }}
+            - name: RABBITMQ_PORT
+              value: {{ .Values.rabbitmq.port | quote }}
+            - name: RABBITMQ_VIRTUAL_HOST
+              value: {{ .Values.rabbitmq.virtualHost | quote }}
+            - name: RABBITMQ_USER
+              value: {{ .Values.rabbitmq.username | quote }}
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.rabbitmq.secret }}
+                  key: rabbitmq-password
+            {{- if (include "shortener-admin.isRelease" .) }}
+            {{- $postgresql_ha := index .Values "postgresql-ha" }}
+            - name: POSTGRESQL_SERVER
+              value: {{ printf "%s-postgresql-ha-pgpool" (include "shortener-admin.fullname" .) | quote }}
+            - name: POSTGRESQL_PORT
+              value: {{ $postgresql_ha.service.ports.postgresql | quote }}
+            - name: POSTGRESQL_USER
+              value: {{ $postgresql_ha.postgresql.username | quote }}
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $postgresql_ha.postgresql.existingSecret }}
+                  key: password
+            - name: REDIS_SERVER
+              value: {{ .Values.redis.serviceName | quote }}
+            - name: REDIS_PORT
+              value: {{ .Values.redis.port | quote }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.redis.secret }}
+                  key: redis-password
+            {{- else }}
+            - name: POSTGRESQL_SERVER
+              value: {{ printf "%s-postgresql" (include "shortener-admin.fullname" .) | quote }}
+            - name: POSTGRESQL_PORT
+              value: {{ .Values.postgresql.primary.service.ports.postgresql | quote }}
+            - name: POSTGRESQL_USER
+              value: "postgres"
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.auth.existingSecret }}
+                  key: postgres-password
+            - name: REDIS_SERVER
+              value: {{ .Values.redis.serviceName | quote }}
+            - name: REDIS_PORT
+              value: {{ .Values.redis.port | quote }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.redis.secret }}
+                  key: redis-password
+            {{- end }}
+          {{- if .Values.admin.resources }}
+          resources: {{- toYaml .Values.admin.resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Values.admin.certificate.enabled }}
+            - mountPath: /etc/admin-tls
+              name: admin-tls
+              readOnly: true
+            {{- end }}
+      volumes:
+        {{- if .Values.admin.certificate.enabled }}
+        - name: admin-tls
+          secret:
+            secretName: {{ printf "%s-tls" (include "shortener-admin.fullname" .) }}
+        {{- end }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - {{ include "shortener-admin.name" . }}
+                topologyKey: kubernetes.io/hostname

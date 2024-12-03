@@ -1,0 +1,17 @@
+{{- if .Values.frontend.redirect.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ printf "%s-redirect" (include "shortener-frontend.fullname" .) }}
+  labels:
+    {{- include "shortener-frontend.redirectLabels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "shortener-frontend.selectorRedirectLabels" . | nindent 4 }}
+  type: {{ .Values.frontend.service.type }}
+  ports:
+    - name: web
+      protocol: TCP
+      port: {{ .Values.frontend.service.port }}
+      targetPort: web
+{{- end -}}

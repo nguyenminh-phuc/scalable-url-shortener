@@ -1,0 +1,26 @@
+﻿{{- if .Values.admin.serviceMonitor.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "shortener-admin.fullname" . }}
+  {{- if .Values.admin.serviceMonitor.namespace }}
+  namespace: {{ .Values.admin.serviceMonitor.namespace }}
+  {{- end }}
+  labels:
+    {{- include "shortener-admin.labels" . | nindent 4 }}
+    {{- if .Values.admin.serviceMonitor.labels }}
+    {{- toYaml .Values.admin.serviceMonitor.labels | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "shortener-admin.selectorMetricLabels" . | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: web
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+{{- end -}}

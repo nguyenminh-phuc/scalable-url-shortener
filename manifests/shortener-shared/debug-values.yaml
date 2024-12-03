@@ -1,0 +1,16 @@
+﻿debug: true
+release: false
+
+shared:
+  certificate:
+    enabled: true
+  jobs:
+    useIstio: false
+
+trust-manager:
+  app:
+    trust:
+      namespace: default
+
+zookeeper:
+  replicaCount: 1

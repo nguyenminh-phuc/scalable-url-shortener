@@ -1,0 +1,36 @@
+﻿apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shortener-admin.fullname" . }}
+  labels:
+    {{- include "shortener-admin.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "shortener-admin.selectorLabels" . | nindent 4 }}
+  type: {{ .Values.admin.service.type }}
+  {{- if .Values.admin.service.headless }}
+  clusterIP: None
+  {{- end }}
+  ports:
+    - name: web
+      protocol: TCP
+      port: {{ .Values.admin.service.port }}
+      targetPort: web
+---
+{{- if .Values.admin.serviceMonitor.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ printf "%s-metrics" (include "shortener-admin.fullname" .) }}
+  labels:
+    {{- include "shortener-admin.metricLabels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "shortener-admin.selectorLabels" . | nindent 4 }}
+  type: {{ .Values.admin.service.type }}
+  ports:
+    - name: web
+      protocol: TCP
+      port: {{ .Values.admin.service.port }}
+      targetPort: web
+{{- end }}

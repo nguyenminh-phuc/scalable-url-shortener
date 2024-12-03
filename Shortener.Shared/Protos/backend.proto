@@ -1,0 +1,237 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "Shortener.Shared.Grpc";
+
+service UserService {
+    rpc Create(CreateUserRequest) returns (CreateUserReply);
+    rpc GenerateToken(GenerateTokenRequest) returns (GenerateTokenReply);
+    rpc Update(UpdateUserRequest) returns (UpdateUserReply);
+    rpc Delete(DeleteUserRequest) returns (DeleteUserReply);
+}
+
+service UrlService {
+    rpc Create(CreateUrlRequest) returns (CreateUrlReply);
+    rpc Redirect(RedirectRequest) returns (RedirectReply);
+    rpc NotifyRedirect(RedirectRequest) returns (google.protobuf.Empty);
+    rpc GetById(GetUrlByIdRequest) returns (GetUrlByIdReply);
+    rpc GetByIds(GetUrlsByIdsRequest) returns (GetUrlsByIdsReply);
+    rpc GetByUserId(GetUrlsByUserIdRequest) returns (GetUrlsByUserIdReply);
+    rpc Update(UpdateUrlRequest) returns (UpdateUrlReply);
+    rpc Delete(DeleteUrlRequest) returns (DeleteUrlReply);
+}
+
+enum UserAgent {
+    BROWSER = 0;
+    ROBOT = 1;
+    UNKNOWN = 2;
+}
+
+enum Platform {
+    WINDOWS = 0;
+    LINUX = 1;
+    IOS = 2;
+    MACOS = 3;
+    ANDROID = 4;
+    Platform_OTHER = 5;
+}
+
+enum Browser {
+    CHROME = 0;
+    EDGE = 1;
+    FIREFOX = 2;
+    INTERNET_EXPLORER = 3;
+    OPERA = 4;
+    SAFARI = 5;
+    Browser_OTHER = 6;
+}
+
+message UserAgentEntry {
+    UserAgent type = 1;
+    int32 views = 2;
+}
+
+message PlatformEntry {
+    Platform type = 1;
+    int32 views = 2;
+    map<string, int32> variantViews = 3;
+}
+
+message BrowserEntry {
+    Browser type = 1;
+    int32 views = 2;
+    map<string, int32> versionViews = 3;
+}
+
+message MobileDeviceTypeEntry {
+    string name = 1;
+    int32 views = 2;
+}
+
+message CountryEntry {
+    string name = 1;
+    int32 views = 2;
+}
+
+message ReferrerEntry {
+    string name = 1;
+    int32 views = 2;
+}
+
+message GrpcViewStats {
+    repeated UserAgentEntry types = 1;
+    repeated PlatformEntry platforms = 2;
+    repeated BrowserEntry browsers = 3;
+    repeated MobileDeviceTypeEntry mobileDeviceTypes = 4;
+    repeated CountryEntry countries = 5;
+    repeated ReferrerEntry referrers = 6;
+    int32 views = 7;
+}
+
+message GrpcUrlMapping {
+    string shortId = 1;
+    string destinationUrl = 2;
+}
+
+message GrpcUrlStats {
+    string shortId = 1;
+    string destinationUrl = 2;
+    int32 totalViews = 3;
+    GrpcViewStats lastDay = 4;
+    GrpcViewStats lastWeek = 5;
+    GrpcViewStats lastMonth = 6;
+    GrpcViewStats allTime = 7;
+}
+
+message UrlsPageInfo {
+    bool hasNextPage = 1;
+    bool hasPreviousPage = 2;
+    optional string startCursor = 3;
+    optional string endCursor = 4;
+}
+
+message User {
+    string username = 1;
+    string password = 2;
+}
+
+message Token {
+    string username = 1;
+    string token = 2;
+}
+
+message CreateUserRequest {
+    User user = 1;
+}
+
+message CreateUserReply {
+    Token token = 1;
+}
+
+message GenerateTokenRequest {
+    User user = 1;
+}
+
+message GenerateTokenReply {
+    Token token = 1;
+}
+
+message UpdateUserRequest {
+    int32 userId = 1;
+    string password = 2;
+}
+
+message UpdateUserReply {
+    bool success = 1;
+}
+
+message DeleteUserRequest {
+    int32 userId = 1;
+}
+
+message DeleteUserReply {
+    bool success = 1;
+}
+
+message CreateUrlRequest {
+    int32 userId = 1;
+    string destinationUrl = 2;
+}
+
+message CreateUrlReply {
+    GrpcUrlMapping url = 1;
+}
+
+message RedirectRequest {
+    string shortId = 1;
+    string ip = 2;
+    optional string userAgent = 3;
+    optional string referrer = 4;
+    google.protobuf.Timestamp timestamp = 5;
+}
+
+message RedirectReply {
+    GrpcUrlMapping url = 1;
+}
+
+message GetUrlByIdRequest {
+    string shortId = 1;
+}
+
+message GetUrlByIdReply {
+    GrpcUrlStats url = 1;
+}
+
+message GetUrlsByIdsRequest {
+    repeated string shortIds = 1;
+}
+
+message GetUrlsByIdsReply {
+    message Urls {
+        repeated GrpcUrlStats urls = 1;
+    }
+
+    Urls urls = 1;
+}
+
+message GetUrlsByUserIdRequest {
+    int32 userId = 1;
+    optional int32 first = 2;
+    optional string after = 3;
+    optional int32 last = 4;
+    optional string before = 5;
+}
+
+message GetUrlsByUserIdReply {
+    message UrlsEdge {
+        string cursor = 1;
+        GrpcUrlStats node = 2;
+    }
+
+    message UrlsConnection {
+        UrlsPageInfo pageInfo = 1;
+        repeated UrlsEdge edges = 2;
+    }
+
+    UrlsConnection connection = 1;
+}
+
+message UpdateUrlRequest {
+    int32 userId = 1;
+    GrpcUrlMapping url = 2;
+}
+
+message UpdateUrlReply {
+    bool success = 1;
+}
+
+message DeleteUrlRequest {
+    int32 userId = 1;
+    string shortId = 2;
+}
+
+message DeleteUrlReply {
+    bool success = 1;
+}

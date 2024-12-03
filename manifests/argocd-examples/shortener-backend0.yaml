@@ -1,0 +1,33 @@
+﻿apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: shortener-backend0
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    namespace: shortener
+    server: https://kubernetes.default.svc
+  sources:
+    - repoURL: registry-1.docker.io/phucapps
+      chart: shortener-backend
+      targetRevision: 1.0.0
+      helm:
+        valueFiles:
+          - $values/manifests/shortener-backend/shard0-debug-values.yaml
+        valuesObject:
+          backend:
+            replicaCount: 2
+            jobs:
+              useIstio: true
+    - repoURL: https://github.com/nguyenminh-phuc/scalable-url-shorterner/
+      targetRevision: main
+      ref: values
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,24 @@
+apiVersion: v2
+name: shortener-shared
+description: URL shortener shared services
+type: application
+version: 1.0.0
+appVersion: "v1.0.0"
+dependencies:
+  - name: trust-manager
+    version: 0.3.0
+    repository: https://charts.jetstack.io
+  - name: zookeeper
+    version: 13.6.0
+    repository: https://charts.bitnami.com/bitnami
+  - name: rabbitmq
+    version: 15.0.5
+    repository: https://charts.bitnami.com/bitnami
+  - name: redis-cluster
+    version: 11.0.7
+    repository: https://charts.bitnami.com/bitnami
+    condition: release
+  - name: redis
+    version: 20.2.1
+    repository: https://charts.bitnami.com/bitnami
+    condition: debug

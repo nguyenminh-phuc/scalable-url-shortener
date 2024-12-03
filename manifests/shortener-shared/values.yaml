@@ -1,0 +1,45 @@
+release: true
+debug: false
+
+shared:
+  certificate:
+    enabled: true
+  jobs:
+    kubectl: quay.io/appuio/oc:v4.16
+    useIstio: false
+
+trust-manager:
+  app:
+    trust:
+      namespace: default
+
+zookeeper:
+  replicaCount: 3
+  resourcesPreset: none
+
+rabbitmq:
+  auth:
+    existingPasswordSecret: shortener-rabbitmq
+    existingErlangSecret: shortener-rabbitmq
+  resourcesPreset: none
+  persistentVolumeClaimRetentionPolicy:
+    enabled: true
+    whenDeleted: Delete
+
+redis-cluster:
+  existingSecret: shortener-redis
+  redis:
+    resourcesPreset: none
+  persistentVolumeClaimRetentionPolicy:
+    enabled: true
+    whenDeleted: Delete
+
+redis:
+  architecture: standalone
+  auth:
+    existingSecret: shortener-redis
+  master:
+    resourcesPreset: none
+    persistentVolumeClaimRetentionPolicy:
+      enabled: true
+      whenDeleted: Delete
